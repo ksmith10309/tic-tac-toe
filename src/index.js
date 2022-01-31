@@ -4,7 +4,7 @@ import './index.css';
 
 function Square(props) {
   return (
-    <button className="square" onClick={props.onClick}>
+    <button className={"square " + props.color} onClick={props.onClick}>
       {props.value}
     </button>
   )
@@ -15,6 +15,7 @@ class Board extends React.Component {
     return (
       <Square 
         value={this.props.squares[i]}
+        color={this.props.colors[i]}
         onClick={() => this.props.onClick(i)}
       />
     );
@@ -49,6 +50,8 @@ class Game extends React.Component {
     this.state = {
       history: [{
         squares: Array(9).fill(null),
+        colors: Array(9).fill("background-white"),
+        location: "",
       }],
       stepNumber: 0,
       xIsNext: true,
@@ -63,9 +66,14 @@ class Game extends React.Component {
       return;
     }
     squares[i] = this.state.xIsNext ? 'X' : 'O';
+    const colors = current.colors.slice();
+    const location = '(' + squares[i] + ' to ' + calculateLocation(i) + ')';
+
     this.setState({
       history: history.concat([{
-        squares: squares,
+        squares,
+        colors,
+        location,
       }]),
       stepNumber: history.length,
       xIsNext: !this.state.xIsNext,
@@ -86,10 +94,10 @@ class Game extends React.Component {
 
     const moves = history.map((step, move) => {
       const desc = move ?
-        'Go to move #' + move :
+        'Go to move #' + move + ' ' + this.state.history[move].location :
         'Go to game start';
       return (
-        <li key={move}>
+        <li key={move} className={(this.state.stepNumber === move ? "font-bold" : "font-normal")}>
           <button onClick={() => this.jumpTo(move)}>{desc}</button>
         </li>
       );
@@ -97,7 +105,13 @@ class Game extends React.Component {
 
     let status;
     if (winner) {
-      status = 'Winner: ' + winner;
+      status = 'Winner: ' + (this.state.xIsNext ? 'O' : 'X');
+      const [a, b, c] = winner;
+      current.colors[a] = 'background-green';
+      current.colors[b] = 'background-green';
+      current.colors[c] = 'background-green';
+    } else if (this.state.stepNumber === 9) {
+      status = 'Draw';
     } else {
       status = 'Next player: ' + (this.state.xIsNext ? 'X' : 'O');
     }
@@ -107,6 +121,7 @@ class Game extends React.Component {
         <div className="game-board">
           <Board
             squares={current.squares}
+            colors={current.colors}
             onClick={(i) => this.handleClick(i)}
           />
         </div>
@@ -140,8 +155,29 @@ function calculateWinner(squares) {
   for (let i = 0; i < lines.length; i++) {
     const [a, b, c] = lines[i];
     if (squares[a] && squares[a] === squares[b] && squares[a] === squares[c]) {
-      return squares[a];
+      return lines[i];
     }
   }
   return null;
+}
+
+function calculateLocation(i) {
+  let location;
+  if (i === 0 || i === 3 || i === 6) {
+    location = 'col: 1,';
+  } else if (i === 1 || i === 4 || i === 7) {
+    location = 'col: 2,';
+  } else {
+    location = 'col: 3,';
+  }
+  if (i === 0 || i === 1 || i === 2) {
+    location += ' row: 1';
+  }
+  else if (i === 3 || i === 4 || i === 5) {
+    location += ' row: 2';
+  }
+  else {
+    location += ' row: 3';
+  }
+  return location;
 }
